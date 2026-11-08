@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static classroom_tags %}
+{% block title %}{{ task.title }} — CodeClass{% endblock %}
+{% block container_class %}wide{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'classroom_detail' task.classroom_id %}">{% icon 'arrow-left' %} {{ task.classroom }}</a>
+
+<div class="page-head">
+  <div>
+    <h1>{{ task.title }}</h1>
+    <div class="task-meta" style="margin-top:.6rem">
+      {% lang_badge task %}
+      {% if task.deadline %}
+        {% if is_late %}<span class="badge badge-late">{% icon 'clock' %} дедлайн прошёл</span>
+        {% else %}<span class="badge">{% icon 'calendar' %} до {{ task.deadline|date:"d.m.Y H:i" }}</span>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+  {% if user.is_teacher %}
+    <div class="btn-row">
+      <a class="btn btn-secondary" href="{% url 'task_edit' task.classroom_id task.pk %}">{% icon 'edit' %} Редактировать</a>
+      <form method="post" action="{% url 'task_delete' task.pk %}" class="inline"
+            onsubmit="return confirm('Удалить задание вместе со всеми решениями учеников?')">
+        {% csrf_token %}<button class="btn-danger">{% icon 'trash' %} Удалить</button>
+      </form>
+    </div>
+  {% elif final_score is not None %}
+    <span class="badge score-chip {{ final_score|score_class }}" style="font-size:1rem">
+      {% icon 'award' %} {% if manual_grade %}Оценка учителя{% else %}Лучший балл{% endif %}: {{ final_score }}/10
+    </span>
+  {% endif %}
+</div>
+
+{% if manual_grade.comment %}
+  <div class="alert">{% icon 'message' %}<span><strong>Комментарий учителя:</strong> {{ manual_grade.comment }}</span></div>
+{% endif %}
+
+<div class="split">
+  <div class="stack">
+    <div class="card">
+      <div class="card-title"><span class="stat-icon">{% icon 'book' %}</span><h2>Условие</h2></div>
+      <div class="task-desc">{{ task.description|linebreaks }}</div>
+    </div>
+
+    {% if user.is_teacher %}
+      <div class="card">
+        <div class="card-title">
+          <span class="stat-icon accent">{% icon 'target' %}</span>
+          <h2>{% if task.language == 'html' %}Правила проверки{% else %}Тесты{% endif %}</h2>
+          <span class="badge" style="margin-left:auto">{{ tests|length }}</span>
+        </div>
+        {% for test in tests %}
+          <div class="test-form">
+            <div class="test-form-head">
+              <strong>{% if task.language == 'html' %}Правило{% else %}Тест{% endif %} {{ forloop.counter }}</strong>
+              {% if test.is_hidden %}<span class="badge">{% icon 'eye-off' %} скрытый</span>{% endif %}
+            </div>
+            {% include 'classroom/_test_case.html' with input=test.input_data expected=test.expected_output %}
+          </div>
+        {% empty %}
+          <p class="muted">Тестов нет — ученики не смогут получить балл.</p>
+        {% endfor %}
+      </div>
+    {% elif visible_tests %}
+      <div class="card">
+        <div class="card-title">
+          <span class="stat-icon accent">{% icon 'target' %}</span>
+          <h2>{% if task.language == 'html' %}Требования{% else %}Примеры{% endif %}</h2>
+        </div>
+        {% for test in visible_tests %}
+          <div class="test-form">
+            <div class="test-form-head"><strong>{% if task.language == 'html' %}Требование{% else %}Пример{% endif %} {{ forloop.counter }}</strong></div>
+            {% include 'classroom/_test_case.html' with input=test.input_data expected=test.expected_output %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if not user.is_teacher %}
+    <div class="stack">
+      <form method="post" class="card editor-card" id="solution-form">
+        {% csrf_token %}
+        <div class="editor-bar"><i></i><i></i><i></i><span class="file">{{ task.language|filename }}</span>{% lang_badge task %}</div>
+        <div class="editor-body">{{ form.code }}</div>
+        {% if form.code.errors %}<div class="editor-section">{{ form.code.errors }}</div>{% endif %}
+
+        {% if task.language == 'html' %}
+          <div class="editor-section">
+            <span class="label">{% icon 'monitor' %} Просмотр страницы</span>
+            <iframe id="html-preview" class="html-preview" sandbox="allow-scripts" title="Просмотр страницы"></iframe>
+          </div>
+        {% else %}
+          <details class="editor-section run-box">
+            <summary>{% icon 'terminal' %} Запустить на своих данных</summary>
+            <label for="run-input">Ввод</label>
+            <textarea id="run-input" rows="3" class="mono" placeholder="Что программа прочитает через input() / cin"></textarea>
+            <p style="margin:.75rem 0 0">
+              <button type="button" class="btn-secondary" id="run-button" data-url="{% url 'task_run' task.pk %}">{% icon 'play' %} Запустить</button>
+            </p>
+            <div id="run-result" class="run-result" hidden>
+              <strong id="run-verdict"></strong>
+              <pre id="run-output" style="margin-top:.4rem"></pre>
+            </div>
+          </details>
+        {% endif %}
+
+        <div class="editor-actions">
+          {% if is_late %}
+            <span class="verdict-bad">{% icon 'clock' %} Дедлайн прошёл, решения не принимаются</span>
+          {% else %}
+            <span class="muted small">Код проверяется на всех тестах, включая скрытые</span>
+            <button>{% icon 'send' %} Отправить на проверку</button>
+          {% endif %}
+        </div>
+      </form>
+
+      {% if submissions %}
+        <div class="card card-sm">
+          <div class="card-title"><span class="stat-icon warning">{% icon 'clock' %}</span><h3>Мои попытки</h3></div>
+          <div class="attempts">
+            {% for s in submissions %}
+              <a class="attempt" href="{% url 'submission_detail' s.pk %}">
+                <span class="attempt-time">
+                  <span class="status-dot {% if s.status == 'accepted' %}ok{% else %}bad{% endif %}">
+                    {% if s.status == 'accepted' %}{% icon 'check' %}{% else %}{% icon 'x' %}{% endif %}
+                  </span>
+                  {{ s.created_at|date:"d.m H:i" }}
+                </span>
+                <span class="muted small">тесты {{ s.passed }}/{{ s.total }}</span>
+                <span class="badge score-chip {{ s.score|score_class }}">{{ s.score }}</span>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {% if not user.is_teacher %}
+    {# Редактор лежит в самом проекте — работает и без интернета #}
+    <script>window.MONACO_VS = '{% static "vendor/monaco/vs" %}';</script>
+    <script src="{% static 'vendor/monaco/vs/loader.js' %}"></script>
+    <script src="{% static 'js/editor.js' %}"></script>
+  {% endif %}
+{% endblock %}

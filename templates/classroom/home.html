@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load classroom_tags %}
+{% block content %}
+<section class="hero">
+  <div>
+    <span class="pill"><span class="pill-dot"></span>Python · C++ · HTML</span>
+    <h1>Учитесь программировать, решая <span class="gradient-text">настоящие задачи</span></h1>
+    <p class="hero-lead">Учитель создаёт задания с тестами, ученики пишут код прямо в браузере,
+      а CodeClass мгновенно проверяет решение и ставит балл от 1 до 10.</p>
+    <div class="btn-row">
+      <a class="btn btn-lg" href="{% url 'register' %}?role=student">{% icon 'graduation' %} Я ученик</a>
+      <a class="btn btn-lg btn-secondary" href="{% url 'register' %}?role=teacher">{% icon 'school' %} Я учитель</a>
+    </div>
+    <div class="hero-stats">
+      <div><strong>3</strong><span>языка</span></div>
+      <div><strong>&lt; 2 c</strong><span>на проверку</span></div>
+      <div><strong>1–10</strong><span>баллов за задачу</span></div>
+    </div>
+  </div>
+
+  <div class="card code-window" aria-hidden="true">
+    <div class="code-window-bar"><i></i><i></i><i></i><span>solution.py</span></div>
+<pre><span class="tok-c"># Найдите сумму двух чисел</span>
+<span class="tok-n">a</span> = <span class="tok-f">int</span>(<span class="tok-f">input</span>())
+<span class="tok-n">b</span> = <span class="tok-f">int</span>(<span class="tok-f">input</span>())
+<span class="tok-k">print</span>(<span class="tok-n">a</span> + <span class="tok-n">b</span>)</pre>
+    <div class="code-window-result">
+      <div>
+        <strong class="verdict-ok">Все тесты пройдены</strong>
+        <div class="test-dots">
+          <span>{% icon 'check' %} Тест 1</span><span>{% icon 'check' %} Тест 2</span><span>{% icon 'check' %} Тест 3</span>
+        </div>
+      </div>
+      <span class="badge score-high score-chip">10/10</span>
+    </div>
+  </div>
+</section>
+
+<div class="section-title"><h2>Всё для уроков программирования</h2></div>
+<div class="grid-3">
+  <div class="card feature">
+    <div class="feature-icon">{% icon 'zap' %}</div>
+    <h3>Автопроверка</h3>
+    <p>Код запускается на тестах учителя за пару секунд. Ученик сразу видит, где ошибся.</p>
+  </div>
+  <div class="card feature">
+    <div class="feature-icon accent">{% icon 'code' %}</div>
+    <h3>Редактор как в VS Code</h3>
+    <p>Подсветка синтаксиса, автодополнение и живой просмотр страницы для HTML-заданий.</p>
+  </div>
+  <div class="card feature">
+    <div class="feature-icon">{% icon 'table' %}</div>
+    <h3>Журнал и Excel</h3>
+    <p>Все баллы класса в одной таблице. Учитель смотрит код и ставит свою оценку.</p>
+  </div>
+  <div class="card feature">
+    <div class="feature-icon accent">{% icon 'eye-off' %}</div>
+    <h3>Скрытые тесты</h3>
+    <p>Часть тестов ученик не видит — решение нельзя «подогнать» под ответы.</p>
+  </div>
+  <div class="card feature">
+    <div class="feature-icon">{% icon 'play' %}</div>
+    <h3>Запуск на своих данных</h3>
+    <p>Можно проверить программу на своём вводе, не тратя попытку.</p>
+  </div>
+  <div class="card feature">
+    <div class="feature-icon accent">{% icon 'monitor' %}</div>
+    <h3>Приложение для Windows</h3>
+    <p>Работает в браузере и как отдельная программа на компьютере.</p>
+  </div>
+</div>
+
+<div class="section-title"><h2>Как это работает</h2></div>
+<div class="split">
+  <div class="card">
+    <div class="card-title"><span class="feature-icon accent" style="margin:0">{% icon 'school' %}</span><h3>Учителю</h3></div>
+    <div class="steps">
+      <div class="step"><div><strong>Создайте класс</strong><p>Получите код из 6 символов и раздайте ученикам.</p></div></div>
+      <div class="step"><div><strong>Добавьте задания</strong><p>Условие, язык, тесты «вход → вывод» или правила для HTML.</p></div></div>
+      <div class="step"><div><strong>Следите за журналом</strong><p>Баллы появляются сами, свою оценку можно поставить в один клик.</p></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="feature-icon" style="margin:0">{% icon 'graduation' %}</span><h3>Ученику</h3></div>
+    <div class="steps">
+      <div class="step"><div><strong>Вступите в класс</strong><p>Введите код, который дал учитель.</p></div></div>
+      <div class="step"><div><strong>Решайте задачи</strong><p>Пишите код в редакторе и запускайте на своих данных.</p></div></div>
+      <div class="step"><div><strong>Получайте баллы</strong><p>Отправьте решение — проверка и балл через пару секунд.</p></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="cta-band">
+  <h2>Готовы начать?</h2>
+  <p>Регистрация занимает меньше минуты.</p>
+  <a class="btn btn-lg" href="{% url 'register' %}">Создать аккаунт {% icon 'arrow-right' %}</a>
+</div>
+{% endblock %}

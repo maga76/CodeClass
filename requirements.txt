@@ -1,0 +1,5 @@
+Django>=6.1,<6.2
+beautifulsoup4>=4.12
+openpyxl>=3.1
+whitenoise>=6.6
+gunicorn>=22; sys_platform != "win32"

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load classroom_tags %}
+{% block title %}Журнал — {{ classroom.name }}{% endblock %}
+{% block container_class %}wide{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'classroom_detail' classroom.pk %}">{% icon 'arrow-left' %} {{ classroom.name }}</a>
+<div class="page-head">
+  <div>
+    <h1>Журнал</h1>
+    <p>Оценка учителя, если она есть, иначе лучший автоматический балл. Нажмите на балл, чтобы открыть код.</p>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'gradebook_export' classroom.pk %}">{% icon 'download' %} Скачать Excel</a>
+</div>
+
+<div class="card table-card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sticky-col">Ученик</th>
+          {% for task in tasks %}<th class="num"><a href="{% url 'task_detail' task.pk %}" title="{{ task.title }}">{{ task.title|truncatechars:18 }}</a></th>{% endfor %}
+          <th class="num">Средний</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td class="sticky-col"><span class="student-cell"><span class="avatar">{{ row.student|initials }}</span>{{ row.student }}</span></td>
+            {% for cell in row.cells %}
+              <td class="num">
+                {% if cell.score is not None %}
+                  <a class="badge score-chip {{ cell.score|score_class }}"
+                     href="{% url 'student_task_submissions' cell.task.pk row.student.pk %}">{{ cell.score }}</a>
+                {% else %}<span class="faint">—</span>{% endif %}
+              </td>
+            {% endfor %}
+            <td class="num">
+              {% if row.average is not None %}<strong class="{{ row.average|score_class }}" style="background:none;border:0">{{ row.average }}</strong>
+              {% else %}<span class="faint">—</span>{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="{{ tasks|length|add:2 }}">
+            <div class="empty">
+              <div class="feature-icon">{% icon 'users' %}</div>
+              <h3>В классе пока нет учеников</h3>
+              <p>Дайте им код <code>{{ classroom.join_code }}</code></p>
+            </div>
+          </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

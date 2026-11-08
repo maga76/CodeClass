@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load classroom_tags %}
+{% block title %}{% if task.pk %}Редактирование{% else %}Новое задание{% endif %} — CodeClass{% endblock %}
+{% block content %}
+<a class="back-link" href="{% if task.pk %}{% url 'task_detail' task.pk %}{% else %}{% url 'classroom_detail' classroom.pk %}{% endif %}">
+  {% icon 'arrow-left' %} {% if task.pk %}{{ task.title }}{% else %}{{ classroom.name }}{% endif %}
+</a>
+<div class="page-head">
+  <div>
+    <h1>{% if task.pk %}Редактирование задания{% else %}Новое <span class="gradient-text">задание</span>{% endif %}</h1>
+    <p>Класс «{{ classroom.name }}»</p>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-title"><span class="stat-icon">{% icon 'book' %}</span><h2>Задание</h2></div>
+    {{ form.non_field_errors }}
+    {% with field=form.title %}{% include '_field.html' %}{% endwith %}
+    {% with field=form.description %}{% include '_field.html' %}{% endwith %}
+    <div class="form-row-2">
+      {% with field=form.language %}{% include '_field.html' %}{% endwith %}
+      {% with field=form.deadline %}{% include '_field.html' %}{% endwith %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="stat-icon accent">{% icon 'target' %}</span><h2>Тесты</h2></div>
+    <div class="alert" data-for="program">{% icon 'info' %}<span>Программа ученика получает «ввод» через <code>input()</code> / <code>cin</code>
+      и должна напечатать «ожидаемый вывод». Балл = доля пройденных тестов × 10.</span></div>
+    <div class="alert" data-for="html">{% icon 'info' %}<span>Каждое правило проверяет, что на странице есть элемент по CSS-селектору
+      (<code>h1</code>, <code>ul li</code>, <code>form input[type=email]</code>). Если указан текст — элемент должен его содержать.</span></div>
+
+    {{ formset.management_form }}
+    {{ formset.non_form_errors }}
+    {% for test_form in formset %}
+      <div class="test-form">
+        {{ test_form.id }}
+        <div class="test-form-head">
+          <strong><span class="task-num" style="width:30px;height:30px;border-radius:9px;font-size:.85rem">{{ forloop.counter }}</span>
+            <span data-program="Тест" data-html="Правило">Тест</span></strong>
+          <div class="btn-row">
+            <label class="check">{{ test_form.is_hidden }} {% icon 'eye-off' %} скрытый</label>
+            {% if test_form.instance.pk %}<label class="check">{{ test_form.DELETE }} {% icon 'trash' %} удалить</label>{% endif %}
+          </div>
+        </div>
+        {{ test_form.non_field_errors }}
+        <div class="split" style="gap:.75rem">
+          <div class="field{% if test_form.input_data.errors %} has-error{% endif %}">
+            <label for="{{ test_form.input_data.id_for_label }}" data-program="Ввод" data-html="CSS-селектор">Ввод</label>
+            {{ test_form.input_data }}{{ test_form.input_data.errors }}
+          </div>
+          <div class="field{% if test_form.expected_output.errors %} has-error{% endif %}">
+            <label for="{{ test_form.expected_output.id_for_label }}"
+                   data-program="Ожидаемый вывод" data-html="Текст внутри элемента (необязательно)">Ожидаемый вывод</label>
+            {{ test_form.expected_output }}{{ test_form.expected_output.errors }}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    <p class="help" style="margin-top:1rem">Нужно больше тестов? Сохраните задание — появятся новые пустые поля.</p>
+  </div>
+
+  <div class="btn-row" style="margin-top:1.25rem">
+    <button class="btn-lg">{% icon 'check' %} Сохранить задание</button>
+    <a class="btn btn-lg btn-ghost" href="{% url 'classroom_detail' classroom.pk %}">Отмена</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Подписи у тестов зависят от языка: для HTML это правила, для Python/C++ — ввод и вывод
+  const languageSelect = document.getElementById('{{ form.language.id_for_label }}');
+  function updateLabels() {
+    const mode = languageSelect.value === 'html' ? 'html' : 'program';
+    document.querySelectorAll('[data-program]').forEach((el) => { el.textContent = el.dataset[mode]; });
+    document.querySelectorAll('[data-for]').forEach((el) => { el.hidden = el.dataset.for !== mode; });
+  }
+  languageSelect.addEventListener('change', updateLabels);
+  updateLabels();
+</script>
+{% endblock %}

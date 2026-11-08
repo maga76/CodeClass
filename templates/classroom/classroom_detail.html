@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load classroom_tags %}
+{% block title %}{{ classroom.name }} — CodeClass{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'dashboard' %}">{% icon 'arrow-left' %} Мои классы</a>
+
+<div class="card class-hero">
+  <div>
+    <h1>{{ classroom.name }}</h1>
+    <div class="class-card-meta">
+      {% if user.is_teacher %}
+        <span>{% icon 'users' %} {{ student_count }} учеников</span>
+        <span>{% icon 'book' %} {{ tasks|length }} заданий</span>
+      {% else %}
+        <span>{% icon 'school' %} {{ classroom.teacher }}</span>
+        <span>{% icon 'check' %} решено {{ solved_count }} из {{ tasks|length }}</span>
+      {% endif %}
+    </div>
+  </div>
+  {% if user.is_teacher %}
+    <div class="btn-row">
+      <div class="join-code">
+        <div><small>Код для учеников</small><strong>{{ classroom.join_code }}</strong></div>
+        <button class="icon-btn" data-copy="{{ classroom.join_code }}" title="Скопировать код">{% icon 'copy' %}</button>
+      </div>
+    </div>
+  {% else %}
+    <div style="min-width:220px">
+      <div class="progress"><i style="width: {{ solved_count|percent:task_count }}%"></i></div>
+      <div class="progress-label"><span>Прогресс</span><span>{{ solved_count|percent:task_count }}%</span></div>
+    </div>
+  {% endif %}
+</div>
+
+<div class="section-title">
+  <h2>Задания</h2>
+  {% if user.is_teacher %}
+    <div class="btn-row">
+      <a class="btn btn-secondary" href="{% url 'gradebook' classroom.pk %}">{% icon 'table' %} Журнал</a>
+      <a class="btn" href="{% url 'task_create' classroom.pk %}">{% icon 'plus' %} Задание</a>
+    </div>
+  {% endif %}
+</div>
+
+<div class="task-list">
+  {% for task in tasks %}
+    <a class="card card-link task-row" href="{% url 'task_detail' task.pk %}">
+      <span class="task-num {% if task.my_score is not None %}done{% endif %}">
+        {% if task.my_score is not None %}{% icon 'check' %}{% else %}{{ forloop.counter }}{% endif %}
+      </span>
+      <div>
+        <h3>{{ task.title }}</h3>
+        <div class="task-meta">
+          {% lang_badge task %}
+          {% if task.deadline %}
+            {% if task.is_late %}<span class="badge badge-late">{% icon 'clock' %} дедлайн прошёл</span>
+            {% else %}<span>{% icon 'calendar' %} до {{ task.deadline|date:"d.m H:i" }}</span>{% endif %}
+          {% endif %}
+        </div>
+      </div>
+      <div class="task-side">
+        {% if user.is_teacher %}
+          <div class="mini-progress">
+            <span>решали {{ task.solved_count }} из {{ student_count }}</span>
+            <div class="progress"><i style="width: {{ task.solved_count|percent:student_count }}%"></i></div>
+          </div>
+        {% elif task.my_score is not None %}
+          <span class="badge score-chip {{ task.my_score|score_class }}">{{ task.my_score }}/10</span>
+        {% else %}
+          <span>Решить</span>
+        {% endif %}
+        {% icon 'arrow-right' %}
+      </div>
+    </a>
+  {% empty %}
+    <div class="card empty">
+      <div class="feature-icon accent">{% icon 'book' %}</div>
+      <h3>Заданий пока нет</h3>
+      <p>{% if user.is_teacher %}Добавьте первое задание — ученики увидят его сразу.{% else %}Учитель ещё не добавил задания.{% endif %}</p>
+      {% if user.is_teacher %}<a class="btn" href="{% url 'task_create' classroom.pk %}">{% icon 'plus' %} Добавить задание</a>{% endif %}
+    </div>
+  {% endfor %}
+</div>
+
+{% if user.is_teacher %}
+  <div class="section-title"><h2>Ученики <span class="badge">{{ student_count }}</span></h2></div>
+  <div class="card table-card">
+    {% if students %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Ученик</th><th>Логин</th><th class="num">Действия</th></tr></thead>
+          <tbody>
+            {% for student in students %}
+              <tr>
+                <td><span class="student-cell"><span class="avatar">{{ student|initials }}</span>{{ student }}</span></td>
+                <td class="mono muted">{{ student.username }}</td>
+                <td class="num">
+                  <div class="btn-row" style="justify-content:center">
+                    <form method="post" action="{% url 'student_reset_password' classroom.pk student.pk %}"
+                          onsubmit="return confirm('Выдать ученику {{ student|escapejs }} новый пароль? Старый перестанет работать.')">
+                      {% csrf_token %}<button class="btn-secondary" title="Ученик забыл пароль">{% icon 'key' %} Новый пароль</button>
+                    </form>
+                    <form method="post" action="{% url 'student_remove' classroom.pk student.pk %}"
+                          onsubmit="return confirm('Исключить {{ student|escapejs }} из класса?')">
+                      {% csrf_token %}<button class="btn-danger" title="Исключить из класса">{% icon 'x' %}</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty">
+        <div class="feature-icon">{% icon 'users' %}</div>
+        <h3>Пока никто не вступил</h3>
+        <p>Ученики регистрируются и вводят код <code>{{ classroom.join_code }}</code></p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="section-title"><h2>Настройки класса</h2></div>
+  <div class="card">
+    <div class="class-hero" style="align-items:flex-end">
+      <form method="post" action="{% url 'classroom_rename' classroom.pk %}" class="inline-form" style="flex:1;min-width:260px">
+        {% csrf_token %}
+        {% with field=rename_form.name %}{% include '_field.html' %}{% endwith %}
+        <button class="btn-secondary" style="margin-top:1.75rem">{% icon 'check' %} Переименовать</button>
+      </form>
+      <form method="post" action="{% url 'classroom_delete' classroom.pk %}"
+            onsubmit="return confirm('Удалить класс со всеми заданиями и решениями? Это нельзя отменить.')">
+        {% csrf_token %}<button class="btn-danger">{% icon 'trash' %} Удалить класс</button>
+      </form>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

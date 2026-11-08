@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load classroom_tags %}
+{% block title %}Регистрация — CodeClass{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <span class="logo-mark">{% icon 'code' %}</span>
+    <h1>Создайте аккаунт</h1>
+    <p class="sub">Займёт меньше минуты.</p>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <div class="field">
+        <span class="label">{{ form.role.label }}</span>
+        <div class="role-options">
+          {% for radio in form.role %}
+            <label class="role-option" for="{{ radio.id_for_label }}">
+              {{ radio.tag }}
+              <span class="role-icon">{% if radio.data.value == 'teacher' %}{% icon 'school' %}{% else %}{% icon 'graduation' %}{% endif %}</span>
+              <strong>{{ radio.choice_label }}</strong>
+              <small>{% if radio.data.value == 'teacher' %}Создаю задания{% else %}Решаю задачи{% endif %}</small>
+            </label>
+          {% endfor %}
+        </div>
+        {{ form.role.errors }}
+      </div>
+      <div class="form-row-2">
+        {% with field=form.first_name %}{% include '_field.html' %}{% endwith %}
+        {% with field=form.last_name %}{% include '_field.html' %}{% endwith %}
+      </div>
+      {% with field=form.username %}{% include '_field.html' %}{% endwith %}
+      {% with field=form.password1 %}{% include '_field.html' %}{% endwith %}
+      {% with field=form.password2 %}{% include '_field.html' %}{% endwith %}
+      <button class="btn-lg btn-block">Создать аккаунт {% icon 'arrow-right' %}</button>
+    </form>
+    <p class="auth-foot">Уже есть аккаунт? <a href="{% url 'login' %}">Войти</a></p>
+  </div>
+</div>
+{% endblock %}

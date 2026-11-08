@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load classroom_tags %}
+{% block title %}Мои классы — CodeClass{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Привет, <span class="gradient-text">{{ user.first_name|default:user.username }}</span>!</h1>
+    <p>{% if user.is_teacher %}Ваши классы и задания — всё здесь.{% else %}Продолжайте решать задачи и набирать баллы.{% endif %}</p>
+  </div>
+</div>
+
+{% if public_urls %}
+  <div class="card glass-primary" style="margin-bottom:1rem">
+    <div class="class-hero" style="gap:1rem">
+      <div>
+        <h3>{% icon 'monitor' %} Сервер работает на этом компьютере</h3>
+        <p class="muted small" style="margin:.35rem 0 0">Ученики открывают этот адрес в программе CodeClass или в любом браузере
+          (компьютеры должны быть в одной сети). Не закрывайте программу во время урока.</p>
+      </div>
+      <div class="btn-row">
+        {% for url in public_urls %}
+          <div class="join-code">
+            <div><small>Адрес для учеников</small><strong style="letter-spacing:.02em;font-size:1.05rem">{{ url }}</strong></div>
+            <button class="icon-btn" data-copy="{{ url }}" title="Скопировать адрес">{% icon 'copy' %}</button>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<div class="grid-4">
+  {% if user.is_teacher %}
+    <div class="card card-sm stat"><span class="stat-icon">{% icon 'school' %}</span><div><strong>{{ stats.classes }}</strong><span>классов</span></div></div>
+    <div class="card card-sm stat"><span class="stat-icon accent">{% icon 'users' %}</span><div><strong>{{ stats.students }}</strong><span>учеников</span></div></div>
+    <div class="card card-sm stat"><span class="stat-icon success">{% icon 'book' %}</span><div><strong>{{ stats.tasks }}</strong><span>заданий</span></div></div>
+    <div class="card card-sm stat"><span class="stat-icon warning">{% icon 'send' %}</span><div><strong>{{ stats.submissions }}</strong><span>решений прислано</span></div></div>
+  {% else %}
+    <div class="card card-sm stat"><span class="stat-icon">{% icon 'school' %}</span><div><strong>{{ stats.classes }}</strong><span>классов</span></div></div>
+    <div class="card card-sm stat"><span class="stat-icon success">{% icon 'check' %}</span><div><strong>{{ stats.solved }}</strong><span>задач решено</span></div></div>
+    <div class="card card-sm stat"><span class="stat-icon accent">{% icon 'target' %}</span><div><strong>{{ stats.todo }}</strong><span>осталось решить</span></div></div>
+    <div class="card card-sm stat"><span class="stat-icon warning">{% icon 'award' %}</span><div><strong>{{ stats.average|default:"—" }}</strong><span>средний балл</span></div></div>
+  {% endif %}
+</div>
+
+<div class="section-title"><h2>Мои классы</h2></div>
+<div class="split-sidebar">
+  <div>
+    {% if classrooms %}
+      <div class="grid">
+        {% for classroom in classrooms %}
+          <a class="card card-link class-card" href="{% url 'classroom_detail' classroom.pk %}">
+            <div class="class-card-cover {{ classroom.pk|cover }}"></div>
+            <span class="class-card-initial">{{ classroom.name|first|upper }}</span>
+            <div class="class-card-body">
+              <h3>{{ classroom.name }}</h3>
+              <div class="class-card-meta">
+                {% if user.is_teacher %}
+                  <span>{% icon 'users' %} {{ classroom.student_count }}</span>
+                  <span>{% icon 'book' %} {{ classroom.task_count }}</span>
+                  <span>{% icon 'key' %} <span class="mono">{{ classroom.join_code }}</span></span>
+                {% else %}
+                  <span>{% icon 'school' %} {{ classroom.teacher }}</span>
+                {% endif %}
+              </div>
+              {% if not user.is_teacher %}
+                <div class="progress"><i style="width: {{ classroom.solved_count|percent:classroom.task_count }}%"></i></div>
+                <div class="progress-label"><span>Прогресс</span><span>{{ classroom.solved_count }} из {{ classroom.task_count }}</span></div>
+              {% endif %}
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card empty">
+        <div class="feature-icon">{% icon 'school' %}</div>
+        <h3>Пока нет классов</h3>
+        <p>{% if user.is_teacher %}Создайте первый класс справа — и раздайте ученикам код.{% else %}Попросите у учителя код класса и введите его справа.{% endif %}</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card glass-primary">
+    <div class="card-title">
+      <span class="stat-icon">{% if user.is_teacher %}{% icon 'plus' %}{% else %}{% icon 'key' %}{% endif %}</span>
+      <h3>{% if user.is_teacher %}Новый класс{% else %}Вступить в класс{% endif %}</h3>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      {% if user.is_teacher %}
+        {% with field=form.name %}{% include '_field.html' %}{% endwith %}
+        <button class="btn-block">{% icon 'plus' %} Создать класс</button>
+      </form>
+      <form method="post" action="{% url 'sample_classroom_create' %}" style="margin-top:.75rem">
+        {% csrf_token %}
+        <button class="btn-secondary btn-block">{% icon 'zap' %} Создать пример класса</button>
+        <p class="help">Класс с 12 готовыми заданиями (Python, C++, HTML) — можно сразу раздать ученикам.</p>
+      {% else %}
+        {% with field=form.join_code %}{% include '_field.html' %}{% endwith %}
+        <button class="btn-block">{% icon 'arrow-right' %} Вступить</button>
+        <p class="help">Код из 6 символов выдаёт учитель.</p>
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}

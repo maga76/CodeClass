@@ -1,0 +1,69 @@
+{% load static classroom_tags %}<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0e17">
+  <title>{% block title %}CodeClass — задачи по программированию{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'vendor/fonts/fonts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="logo" href="{% url 'home' %}">
+        <span class="logo-mark">{% icon 'code' %}</span>
+        <span>Code<span class="gradient-text">Class</span></span>
+      </a>
+      {% if user.is_authenticated %}
+        <nav class="nav">
+          <a href="{% url 'dashboard' %}"
+             class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            {% icon 'book' %}<span>Мои классы</span>
+          </a>
+        </nav>
+        <div class="user-menu">
+          <button class="icon-btn app-settings" hidden title="Настройки программы" aria-label="Настройки программы">{% icon 'settings' %}</button>
+          <span class="avatar {% if user.is_teacher %}teacher{% endif %}">{{ user|initials }}</span>
+          <span class="user-meta"><strong>{{ user }}</strong><small>{{ user.get_role_display }}</small></span>
+          <a class="icon-btn" href="{% url 'password_change' %}" title="Сменить пароль" aria-label="Сменить пароль">{% icon 'key' %}</a>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class="icon-btn" title="Выйти" aria-label="Выйти">{% icon 'log-out' %}</button>
+          </form>
+        </div>
+      {% else %}
+        <nav class="nav nav-end">
+          <button class="icon-btn app-settings" hidden title="Настройки программы" aria-label="Настройки программы">{% icon 'settings' %}</button>
+          <a class="btn btn-ghost" href="{% url 'login' %}">Войти</a>
+          <a class="btn" href="{% url 'register' %}">Начать бесплатно</a>
+        </nav>
+      {% endif %}
+    </div>
+  </header>
+
+  {% if messages %}
+    <div class="toasts" role="status">
+      {% for message in messages %}
+        <div class="toast toast-{{ message.level_tag }}{% if 'sticky' in message.extra_tags %} sticky{% endif %}">
+          {% if message.level_tag == 'error' %}{% icon 'x' %}{% elif message.level_tag == 'success' %}{% icon 'check' %}{% else %}{% icon 'info' %}{% endif %}
+          <span>{{ message }}</span>
+          <button class="toast-close" aria-label="Закрыть">×</button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <main class="container {% block container_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">CodeClass · задачи по Python, C++ и HTML для учителей и учеников</footer>
+
+  <script src="{% static 'js/app.js' %}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

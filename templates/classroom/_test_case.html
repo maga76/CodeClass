@@ -1,0 +1,8 @@
+{% if task.language == 'html' %}
+  <div class="rule">На странице есть <code>{{ input }}</code>{% if expected %} с текстом «{{ expected }}»{% endif %}</div>
+{% else %}
+  <div class="io-grid">
+    <div><div class="label">Ввод</div><pre>{{ input|default:" " }}</pre></div>
+    <div><div class="label">{% if user.is_teacher %}Ожидаемый вывод{% else %}Вывод{% endif %}</div><pre>{{ expected|default:" " }}</pre></div>
+  </div>
+{% endif %}

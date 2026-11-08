@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load classroom_tags %}
+{% block title %}Вход — CodeClass{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <span class="logo-mark">{% icon 'code' %}</span>
+    <h1>С возвращением</h1>
+    <p class="sub">Войдите, чтобы продолжить решать задачи.</p>
+    {% if form.non_field_errors %}
+      <div class="alert alert-error">{% icon 'x' %}<span>Неверный логин или пароль.</span></div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}{% include '_field.html' %}{% endfor %}
+      <button class="btn-lg btn-block">Войти {% icon 'arrow-right' %}</button>
+    </form>
+    <p class="auth-foot">Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p>
+    {% if demo_accounts %}
+      <div class="demo-box">
+        <div class="label">{% icon 'zap' %} Демо-доступ</div>
+        {% for role, username, password in demo_accounts %}
+          <div class="demo-row">
+            <span><strong>{{ role }}</strong><br><span class="mono muted small">{{ username }} / {{ password }}</span></span>
+            <button type="button" class="btn-secondary demo-login" data-username="{{ username }}" data-password="{{ password }}">
+              Войти {% icon 'arrow-right' %}</button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // «Войти» в демо-доступе: подставить логин и пароль и отправить форму
+  document.querySelectorAll('.demo-login').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.getElementById('id_username').value = button.dataset.username;
+      document.getElementById('id_password').value = button.dataset.password;
+      document.getElementById('id_username').form.submit();
+    });
+  });
+</script>
+{% endblock %}

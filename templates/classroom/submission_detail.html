@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load classroom_tags %}
+{% block title %}Решение — CodeClass{% endblock %}
+{% block container_class %}wide{% endblock %}
+{% block content %}
+{% with task=submission.task %}
+<div class="btn-row" style="margin-bottom:1rem">
+  <a class="back-link" style="margin:0" href="{% url 'task_detail' task.pk %}">{% icon 'arrow-left' %} {{ task }}</a>
+  {% if user.is_teacher %}<a class="back-link" style="margin:0 0 0 auto" href="{% url 'gradebook' task.classroom_id %}">{% icon 'table' %} Журнал</a>{% endif %}
+</div>
+
+<div class="card result-hero">
+  <div class="score-ring {{ submission.score|score_class }}" style="--p: {{ submission.score }}0">
+    <div><strong>{{ submission.score }}</strong><span>из 10</span></div>
+  </div>
+  <div style="flex:1;min-width:220px">
+    <h1 class="status-title status-{{ submission.status }}">{{ submission.get_status_display }}</h1>
+    <div class="class-card-meta" style="margin-top:.6rem">
+      <span>{% icon 'users' %} {{ submission.student }}</span>
+      <span>{% icon 'clock' %} {{ submission.created_at|date:"d.m.Y H:i" }}</span>
+      <span>{% icon 'target' %} пройдено {{ submission.passed }} из {{ submission.total }}</span>
+      {% lang_badge task %}
+    </div>
+  </div>
+  {% if not user.is_teacher %}
+    <a class="btn btn-secondary" href="{% url 'task_detail' task.pk %}">{% icon 'edit' %} Исправить решение</a>
+  {% endif %}
+</div>
+
+{% if user.is_teacher %}
+  <form method="post" action="{% url 'set_grade' task.pk submission.student_id %}" class="card glass-primary">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <div class="card-title">
+      <span class="stat-icon">{% icon 'award' %}</span>
+      <h3>Оценка учителя</h3>
+      {% if manual_grade %}<span class="badge score-chip {{ manual_grade.score|score_class }}" style="margin-left:auto">сейчас {{ manual_grade.score }}/10</span>{% endif %}
+    </div>
+    <div class="grade-form">
+      {% with field=grade_form.score %}{% include '_field.html' %}{% endwith %}
+      {% with field=grade_form.comment %}{% include '_field.html' %}{% endwith %}
+      <div class="btn-row">
+        <button>{% icon 'check' %} Поставить</button>
+        {% if manual_grade %}<button name="reset" value="1" class="btn-secondary">Убрать</button>{% endif %}
+      </div>
+    </div>
+    <p class="help" style="margin:.75rem 0 0">Оценка учителя заменяет автоматический балл в журнале и видна ученику.</p>
+  </form>
+{% elif manual_grade %}
+  <div class="alert" style="margin-top:1rem">{% icon 'award' %}
+    <span>Оценка учителя за задание: <strong>{{ manual_grade.score }}/10</strong>{% if manual_grade.comment %} — {{ manual_grade.comment }}{% endif %}</span>
+  </div>
+{% endif %}
+
+<div class="split" style="margin-top:1.25rem">
+  <div class="card">
+    <div class="card-title"><span class="stat-icon accent">{% icon 'target' %}</span><h2>Результаты</h2></div>
+    {% for r in submission.results %}
+      <details class="test-result" {% if r.verdict != 'OK' %}open{% endif %}>
+        <summary>
+          <span class="status-dot {% if r.verdict == 'OK' %}ok{% else %}bad{% endif %}">
+            {% if r.verdict == 'OK' %}{% icon 'check' %}{% else %}{% icon 'x' %}{% endif %}
+          </span>
+          {% if r.number %}{% if task.language == 'html' %}Правило{% else %}Тест{% endif %} {{ r.number }}{% endif %}
+          {% if r.hidden %}<span class="badge">{% icon 'eye-off' %} скрытый</span>{% endif %}
+          <span class="verdict {% if r.verdict == 'OK' %}verdict-ok{% else %}verdict-bad{% endif %}">{{ r.verdict }}</span>
+        </summary>
+        {% if r.input is not None or r.error %}
+          <div class="test-body">
+            {% if task.language == 'html' %}
+              {% if r.input is not None %}{% include 'classroom/_test_case.html' with input=r.input expected=r.expected %}{% endif %}
+            {% elif r.input is not None %}
+              <div class="io-grid">
+                <div><div class="label">Ввод</div><pre>{{ r.input|default:" " }}</pre></div>
+                <div><div class="label">Ожидалось</div><pre>{{ r.expected|default:" " }}</pre></div>
+              </div>
+              {% if r.output is not None and r.verdict != 'OK' %}
+                <div class="label" style="margin-top:.75rem">Получено</div><pre>{{ r.output|default:" " }}</pre>
+              {% endif %}
+            {% endif %}
+            {% if r.error %}<div class="label" style="margin-top:.75rem">Ошибка</div><pre class="verdict-bad">{{ r.error }}</pre>{% endif %}
+          </div>
+        {% endif %}
+      </details>
+    {% empty %}
+      <p class="muted">Тестов не было.</p>
+    {% endfor %}
+  </div>
+
+  <div class="stack">
+    {% if task.language == 'html' %}
+      <div class="card editor-card">
+        <div class="editor-bar"><i></i><i></i><i></i><span class="file">Страница</span></div>
+        {# Без allow-same-origin: скрипты ученика не получат доступ к сайту и cookies #}
+        <iframe class="html-preview" style="border:0;border-radius:0" sandbox="allow-scripts" srcdoc="{{ submission.code }}" title="Страница ученика"></iframe>
+      </div>
+    {% endif %}
+    <div class="card editor-card">
+      <div class="editor-bar"><i></i><i></i><i></i><span class="file">{{ task.language|filename }}</span></div>
+      <pre class="code-editor" style="min-height:0">{{ submission.code }}</pre>
+    </div>
+  </div>
+</div>
+{% endwith %}
+{% endblock %}

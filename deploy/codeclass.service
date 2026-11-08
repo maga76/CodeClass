@@ -1,0 +1,22 @@
+[Unit]
+Description=CodeClass (Django + gunicorn)
+After=network.target
+
+[Service]
+User=codeclass
+Group=codeclass
+WorkingDirectory=/srv/codeclass
+EnvironmentFile=/etc/codeclass.env
+# Без потоков: решения запускаются через subprocess с preexec_fn, а он небезопасен в многопоточном процессе.
+# timeout 120 — проверка решения с большим числом тестов может занять время.
+ExecStart=/srv/codeclass/.venv/bin/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:8000 --workers 4 --timeout 120 --access-logfile -
+Restart=always
+RestartSec=3
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/codeclass
+
+[Install]
+WantedBy=multi-user.target
